@@ -1,0 +1,71 @@
+<% layout("layouts/boilerplate") %>
+<main class="container">
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card show-card">
+            <h2 class="mb-4"> <%= listing.title %> </h2>
+            <img src="<%=  listing.image.url  %>" class="card-img-top show-img" alt="listingimage">
+            <div class="card-body">
+                <p class="card-text card-text-show"> Owned by <%= listing.owner.username %> </p>
+            <p class="card-text card-text-show"> <%= listing.description %> </p>
+            <p class="card-text card-text-show">&#8377; <%= listing.price.toLocaleString("en-IN") %></p>
+            <p class="card-text card-text-show">  <%= listing.location %> </p>
+            <p class="card-text card-text-show"> <%= listing.country %> </p>
+        </div>
+        <% if(currUser && currUser._id.equals(listing.owner._id)) { %> 
+         <div class="btns d-flex flex-row gap-2 justify-content-center mt-2">
+                <a class="btn add" href="/listings/<%= listing._id %>/edit">Edit</a>
+
+                <form method="post" action="/listings/<%= listing._id %>?_method=DELETE">
+                <button class="btn btn-dark">Delete</button>
+                </form>
+            </div>
+            <hr>
+       <% } %>
+
+            <% if(currUser) {%>
+            <div class="col-md-8">
+                <h4>Leave a Review</h4>
+                <form action="/listings/<%= listing._id  %>/reviews" method="POST" novalidate class="needs-validation">
+                    <div class="mt-3 mb-3">
+                        <label for="rating" class="form-label">Rating</label>
+                        <input type="range" min="1" max="5" id="rating" name="review[rating]" class="form-range">
+                    </div>
+                    <div class="mt-3 mb-3">
+                        <label for="comment" class="form-label">Comment</label>
+                        <textarea 
+                        rows="5" 
+                        cols="50" 
+                        type="text" id="comment" 
+                        name="review[comment]" 
+                        class="form-control"
+                        required></textarea>
+                        <div class="invalid-feedback">
+                            Add some review before submitting
+                        </div>
+                    </div>
+                    <button class="btn btn-dark mt-3">Submit</button>
+                </form>
+            </div>
+          
+<% } %>
+<hr>
+           
+        <h4>All Reviews</h4>
+        <div class="row">
+            <% listing.reviews.forEach(review => { %>
+                <div class="card col-5 ms-3">
+                    <div class="card-body">
+                        <h5 class="card-title"><%= review.author.username  %></h5>
+                        <p class="card-text"><%= review.comment  %></p>
+                        <p class="card-text"><b>Rating: </b><%= review.rating  %> star</p>
+                        <form method="post" action="/listings/<%= listing._id %>/reviews/<%= review._id%>?_method=DELETE">
+                        <button class="btn add">Delete</button>
+                      </form>
+                    </div>
+                </div>
+              <% }) %>
+        </div>
+    </div>
+</div>
+</main>
