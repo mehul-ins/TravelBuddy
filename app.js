@@ -6,7 +6,7 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const port = 8080;
-const MONGO_URL = process.env.MONGO_URI;
+const MONGO_URL = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/airbnb";
 const path = require("path");
 const ejsMate = require("ejs-mate");
 const methodOverride = require("method-override");
@@ -22,15 +22,15 @@ const listingsRouter = require("./routes/listing.js");
 const reviewsRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 
-
-// Connecting MongoDB
-main().then(() => {
-    console.log("Database Connected");
-}).catch((err) =>{
-    console.log(err);
-})
-async function main(){
-    await mongoose.connect(MONGO_URL);
+// MongoDB connection with better error handling for serverless
+if (mongoose.connection.readyState === 0) {
+    mongoose.connect(MONGO_URL, {
+        serverSelectionTimeoutMS: 5000,
+    }).then(() => {
+        console.log("Database Connected");
+    }).catch((err) => {
+        console.error("MongoDB Connection Error:", err);
+    });
 }
 
 // Set engine and use enginer
@@ -40,16 +40,18 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({extended : true}));
 app.use(express.static(path.join(__dirname, "public")));
 app.use(methodOverride("_method"));
-app.use(cookieParser("secretcode"));
+app.use(cookieParser(process.env.COOKIE_SECRET || "secretcode"));
 
 const sessionOptions = {
-    secret : "mysupersecretcode",
+    secret : process.env.SESSION_SECRET || "mysupersecretcode",
     resave : false,
-    saveUninitialized : true,
+    saveUninitialized : false,
     cookie : {
         expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
         maxAge : 7 * 24 * 60 * 60 * 1000,
-        httpOnly : true
+        httpOnly : true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
     }
 }
 
