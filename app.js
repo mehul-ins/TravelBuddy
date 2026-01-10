@@ -107,7 +107,12 @@ app.use((err, req, res, next) => {
    res.status(statusCode).render("error.ejs", { message });
 });
 
-// Connecting Port
-app.listen(port, () => {
+// Export for Vercel
+module.exports = app;
+
+// Connecting Port (only for local development)
+if (process.env.NODE_ENV !== "production") {
+  app.listen(port, () => {
     console.log("Port Connected");
-});
+  });
+}

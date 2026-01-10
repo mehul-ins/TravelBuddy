@@ -1,0 +1,14 @@
+# Vercel
+.vercel
+
+# dependencies
+node_modules
+package-lock.json
+
+# environment variables
+.env
+.env.local
+
+# misc
+.DS_Store
+*.log
