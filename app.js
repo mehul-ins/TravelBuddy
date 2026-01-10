@@ -5,7 +5,7 @@ if(process.env.NODE_ENV != "production"){
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
-const port = 8080;
+const port = process.env.PORT || 3000;
 const MONGO_URL = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/airbnb";
 const path = require("path");
 const ejsMate = require("ejs-mate");
@@ -109,12 +109,12 @@ app.use((err, req, res, next) => {
    res.status(statusCode).render("error.ejs", { message });
 });
 
-// Export for Vercel
+// Export for Vercel (serverless)
 module.exports = app;
 
-// Connecting Port (only for local development)
-if (process.env.NODE_ENV !== "production") {
-  app.listen(port, () => {
-    console.log("Port Connected");
-  });
+// Connect port when running in non-Vercel environments (e.g., Render/local)
+if (!process.env.VERCEL) {
+    app.listen(port, () => {
+        console.log(`Server listening on port ${port}`);
+    });
 }
