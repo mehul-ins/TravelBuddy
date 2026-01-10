@@ -12,8 +12,8 @@
         <textarea name="listing[description]" class="form-control" required><%= listing.description %></textarea>
       </div>
       <div class="mb-3">
-        <label for="image" class="form-label">Image</label>
-        <input name="listing[image][url]" value="<%= listing.image?.url || '' %>" type="text" class="form-control" required />
+        <label for="image" class="form-label">Upload Image</label>
+        <input name="listing[image][url]" type="file" class="form-control" required />
       </div>
       <div class="mb-3">
         <label for="price" class="form-label col-lg-4 col-md-4">Price</label>
