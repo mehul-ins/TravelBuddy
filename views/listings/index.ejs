@@ -1,22 +1,64 @@
 <% layout("layouts/boilerplate") %> 
-<!-- <%= success %> -->
-<body>
-    <h3>All Listings</h3>
-<div class="row">
-    <% for(listing of allListings){ %>
-    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-    <a href="/listings/<%= listing._id %>" style="text-decoration: none;">
-    <div class="card listing-card">
-        <img src="<%= listing.image.url  %>" class="card-img-top listing-card-img" alt="listing-image">
-        <div class="card-body">
-            <h4 class="card-text"><%= listing.title %></h4>
-            <p class="card-text">&#8377; <%= listing.price.toLocaleString("en-IN") %> / night</p>
-        </div>
-    </div>
-    </a>
-    </div>
+
+<div class="listings-header mb-4">
+    <% if (searchQuery && searchQuery.length > 0) { %>
+        <h3 class="search-results-title">
+            Search results for "<span class="search-term"><%= searchQuery %></span>"
+        </h3>
+        <p class="text-muted"><%= allListings.length %> listing<%= allListings.length !== 1 ? 's' : '' %> found</p>
+    <% } else { %>
+        <h3>All Listings</h3>
+        <p class="text-muted"><%= allListings.length %> listing<%= allListings.length !== 1 ? 's' : '' %> available</p>
     <% } %>
 </div>
-</body>
+
+<% if (allListings.length === 0) { %>
+    <div class="no-results-container">
+        <div class="no-results-content">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <h4>No listings found</h4>
+            <% if (searchQuery && searchQuery.length > 0) { %>
+                <p>We couldn't find any listings matching "<strong><%= searchQuery %></strong>"</p>
+                <div class="suggestions">
+                    <p class="mb-2">Try:</p>
+                    <ul>
+                        <li>Checking your spelling</li>
+                        <li>Using more general keywords</li>
+                        <li>Searching for a different location or country</li>
+                    </ul>
+                </div>
+                <a href="/listings" class="btn btn-primary mt-3">
+                    View All Listings
+                </a>
+            <% } else { %>
+                <p>There are currently no listings available.</p>
+                <a href="/listings/new" class="btn btn-primary mt-3">
+                    <i class="fa-solid fa-plus me-2"></i>Add First Listing
+                </a>
+            <% } %>
+        </div>
+    </div>
+<% } else { %>
+    <div class="row">
+        <% for(listing of allListings){ %>
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+            <a href="/listings/<%= listing._id %>" style="text-decoration: none;">
+                <div class="card listing-card">
+                    <img src="<%= listing.image.url %>" class="card-img-top listing-card-img" alt="listing-image">
+                    <div class="card-body">
+                        <h4 class="card-text"><%= listing.title %></h4>
+                        <p class="card-text">&#8377; <%= listing.price.toLocaleString("en-IN") %> / night</p>
+                        <% if (listing.location) { %>
+                            <p class="card-location text-muted">
+                                <i class="fa-solid fa-location-dot"></i> <%= listing.location %>
+                            </p>
+                        <% } %>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <% } %>
+    </div>
+<% } %>
 
 

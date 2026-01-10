@@ -1,8 +1,12 @@
+if(process.env.NODE_ENV != "production"){
+    require("dotenv").config();
+}
+
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const port = 8080;
-const MONGO_URL = "mongodb://127.0.0.1:27017/airbnb";
+const MONGO_URL = process.env.MONGO_URI;
 const path = require("path");
 const ejsMate = require("ejs-mate");
 const methodOverride = require("method-override");
@@ -41,16 +45,13 @@ app.use(cookieParser("secretcode"));
 const sessionOptions = {
     secret : "mysupersecretcode",
     resave : false,
-    saveUnitnialized : true,
+    saveUninitialized : true,
     cookie : {
         expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
         maxAge : 7 * 24 * 60 * 60 * 1000,
         httpOnly : true
     }
 }
-app.get("/", (req, res) => {
-  res.send("Root Route");
-});
 
 app.use(session(sessionOptions));
 app.use(flash());
@@ -79,7 +80,11 @@ app.use((req, res, next) => {
 //     console.log(req.signedCookies);
 //     res.send("verified")
 // });
-// Root Route
+
+// Root Route -> All Listings
+app.get("/", (req, res) => {
+    res.redirect("/listings");
+});
 
 // Listings
 app.use("/listings", listingsRouter);
