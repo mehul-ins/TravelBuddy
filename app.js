@@ -13,6 +13,7 @@ const methodOverride = require("method-override");
 const ExpressError = require("./utils/ExpressError.js");
 const cookieParser = require("cookie-parser");
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const flash = require('connect-flash');
 const passport = require('passport');
 const LocalStrategy = require("passport-local");
@@ -37,21 +38,30 @@ if (mongoose.connection.readyState === 0) {
 app.engine('ejs', ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+// Required for secure cookies behind Render/HTTPS proxy
+app.set('trust proxy', 1);
 app.use(express.urlencoded({extended : true}));
 app.use(express.static(path.join(__dirname, "public")));
 app.use(methodOverride("_method"));
 app.use(cookieParser(process.env.COOKIE_SECRET || "secretcode"));
 
 const sessionOptions = {
+    store: MongoStore.create({
+      mongoUrl: MONGO_URL,
+      ttl: 14 * 24 * 60 * 60, // 14 days
+      autoRemove: 'interval',
+      autoRemoveInterval: 10,
+    }),
     secret : process.env.SESSION_SECRET || "mysupersecretcode",
     resave : false,
     saveUninitialized : false,
+    proxy: true, // respect X-Forwarded-* when setting secure cookies
     cookie : {
         expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
         maxAge : 7 * 24 * 60 * 60 * 1000,
         httpOnly : true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+        sameSite: 'lax'
     }
 }
 
