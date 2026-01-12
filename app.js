@@ -49,32 +49,15 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(methodOverride("_method"));
 app.use(cookieParser(process.env.COOKIE_SECRET || "secretcode"));
 
-// Create Mongo-backed session store with error handling
-let sessionStore;
-try {
-  sessionStore = MongoStore.create({
+// MongoDB-backed session store for production
+const sessionStore = MongoStore.create({
     mongoUrl: MONGO_URL,
-    dbName: process.env.MONGO_DB || undefined,
     collectionName: 'sessions',
-    ttl: 14 * 24 * 60 * 60,
-    autoRemove: 'interval',
-    autoRemoveInterval: 10,
-    touchAfter: 24 * 3600, // lazy session update
-  });
-
-  sessionStore.on('error', (err) => {
-    console.error('⚠️ Session store error:', err.message);
-  });
-
-  console.log("✅ Session store configured");
-} catch (err) {
-  console.error("❌ Failed to create session store:", err.message);
-  // Fallback to MemoryStore (not ideal for production but prevents crash)
-  sessionStore = undefined;
-}
+    ttl: 14 * 24 * 60 * 60,  // 14 days
+});
 
 const sessionOptions = {
-    store: sessionStore, // will be undefined if MongoStore failed
+    store: sessionStore,
     secret : process.env.SESSION_SECRET || "mysupersecretcode",
     resave : false,
     saveUninitialized : false,
@@ -85,10 +68,6 @@ const sessionOptions = {
         secure: process.env.NODE_ENV === "production",
         sameSite: 'lax'
     }
-}
-
-if (!sessionStore) {
-    console.warn("⚠️ Using MemoryStore - sessions will not persist across restarts!");
 }
 
 app.use(session(sessionOptions));
