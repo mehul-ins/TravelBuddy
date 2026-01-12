@@ -23,16 +23,19 @@ const listingsRouter = require("./routes/listing.js");
 const reviewsRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 
-// MongoDB connection with better error handling for serverless
-if (mongoose.connection.readyState === 0) {
-    mongoose.connect(MONGO_URL, {
-        serverSelectionTimeoutMS: 5000,
-    }).then(() => {
-        console.log("Database Connected");
-    }).catch((err) => {
-        console.error("MongoDB Connection Error:", err);
-    });
-}
+// MongoDB connection with better error handling
+mongoose.connect(MONGO_URL, {
+    serverSelectionTimeoutMS: 5000,
+}).then(() => {
+    console.log("✅ MongoDB Connected Successfully");
+}).catch((err) => {
+    console.error("❌ MongoDB Connection Error:", err.message);
+    // Don't exit - let app start anyway for debugging
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('Mongoose connection error:', err);
+});
 
 // Set engine and use enginer
 app.engine('ejs', ejsMate);
@@ -46,33 +49,46 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(methodOverride("_method"));
 app.use(cookieParser(process.env.COOKIE_SECRET || "secretcode"));
 
-// Create Mongo-backed session store with optional dbName and error logging
-const sessionStore = MongoStore.create({
-  mongoUrl: MONGO_URL,
-  dbName: process.env.MONGO_DB || undefined,
-  collectionName: 'sessions',
-  ttl: 14 * 24 * 60 * 60, // 14 days
-  autoRemove: 'interval',
-  autoRemoveInterval: 10,
-});
+// Create Mongo-backed session store with error handling
+let sessionStore;
+try {
+  sessionStore = MongoStore.create({
+    mongoUrl: MONGO_URL,
+    dbName: process.env.MONGO_DB || undefined,
+    collectionName: 'sessions',
+    ttl: 14 * 24 * 60 * 60,
+    autoRemove: 'interval',
+    autoRemoveInterval: 10,
+    touchAfter: 24 * 3600, // lazy session update
+  });
 
-sessionStore.on('error', (err) => {
-  console.error('Session store error:', err);
-});
+  sessionStore.on('error', (err) => {
+    console.error('⚠️ Session store error:', err.message);
+  });
+
+  console.log("✅ Session store configured");
+} catch (err) {
+  console.error("❌ Failed to create session store:", err.message);
+  // Fallback to MemoryStore (not ideal for production but prevents crash)
+  sessionStore = undefined;
+}
 
 const sessionOptions = {
-    store: sessionStore,
+    store: sessionStore, // will be undefined if MongoStore failed
     secret : process.env.SESSION_SECRET || "mysupersecretcode",
     resave : false,
     saveUninitialized : false,
-    proxy: true, // respect X-Forwarded-* when setting secure cookies
+    proxy: true,
     cookie : {
-        expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
         maxAge : 7 * 24 * 60 * 60 * 1000,
         httpOnly : true,
         secure: process.env.NODE_ENV === "production",
         sameSite: 'lax'
     }
+}
+
+if (!sessionStore) {
+    console.warn("⚠️ Using MemoryStore - sessions will not persist across restarts!");
 }
 
 app.use(session(sessionOptions));
