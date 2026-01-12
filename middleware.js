@@ -27,7 +27,8 @@ module.exports.isOwner = async (req, res, next) => {
       return res.redirect("/listings");
     }
 
-    if (!listing.owner._id.equals(req.user._id)) {
+    // 'owner' is an ObjectId unless populated; compare ObjectIds directly
+    if (!listing.owner || !listing.owner.equals(req.user._id)) {
       req.flash("error", "You don't have access to edit this listing");
       return res.redirect(`/listings/${id}`);
     }
@@ -38,7 +39,7 @@ module.exports.isReviewAuthor = async (req, res, next) => {
   const { id, reviewId } = req.params;
   const review = await Review.findById(reviewId);
 
-  if (!review.author._id.equals(req.user._id)) {
+  if (!review || !review.author || !review.author.equals(req.user._id)) {
     req.flash("error", "You are not the author");
     return res.redirect(`/listings/${id}`);
   }

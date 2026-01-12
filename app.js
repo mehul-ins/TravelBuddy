@@ -40,18 +40,28 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 // Required for secure cookies behind Render/HTTPS proxy
 app.set('trust proxy', 1);
+
 app.use(express.urlencoded({extended : true}));
 app.use(express.static(path.join(__dirname, "public")));
 app.use(methodOverride("_method"));
 app.use(cookieParser(process.env.COOKIE_SECRET || "secretcode"));
 
+// Create Mongo-backed session store with optional dbName and error logging
+const sessionStore = MongoStore.create({
+  mongoUrl: MONGO_URL,
+  dbName: process.env.MONGO_DB || undefined,
+  collectionName: 'sessions',
+  ttl: 14 * 24 * 60 * 60, // 14 days
+  autoRemove: 'interval',
+  autoRemoveInterval: 10,
+});
+
+sessionStore.on('error', (err) => {
+  console.error('Session store error:', err);
+});
+
 const sessionOptions = {
-    store: MongoStore.create({
-      mongoUrl: MONGO_URL,
-      ttl: 14 * 24 * 60 * 60, // 14 days
-      autoRemove: 'interval',
-      autoRemoveInterval: 10,
-    }),
+    store: sessionStore,
     secret : process.env.SESSION_SECRET || "mysupersecretcode",
     resave : false,
     saveUninitialized : false,
@@ -92,6 +102,16 @@ app.use((req, res, next) => {
 //     console.log(req.signedCookies);
 //     res.send("verified")
 // });
+
+// Health and session diagnostics
+app.get('/healthz', (req, res) => res.status(200).send('ok'));
+app.get('/session-check', (req, res) => {
+  res.json({
+    hasSession: !!req.session,
+    sessionID: req.sessionID || null,
+    user: req.user ? { id: req.user._id, username: req.user.username } : null,
+  });
+});
 
 // Root Route -> All Listings
 app.get("/", (req, res) => {
